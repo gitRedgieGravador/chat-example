@@ -94,12 +94,16 @@
       padding-left: 5%;
       text-align: left;
       overflow-x: hidden;
+      background: white;
+      background-size: contain;
     }
 
     .rightSmg {
       text-align: right;
       overflow-x: hidden;
       padding-right: 5%;
+      background: white;
+      background-size: contain;
     }
     ::-webkit-scrollbar { 
         display: none; 
@@ -117,21 +121,33 @@
     }
 
     .chatAvatarR {
+      position: relative;
+      top: 10px;
       vertical-align: middle;
-      width: 20px;
-      height: 20px;
+      width: 40px;
+      height: 40px;
       border-radius: 50%;
       float:right;
       right: 0%;
     }
 
     .chatAvatarL {
+      top: 10px;
       vertical-align: middle;
-      width: 20px;
-      height: 20px;
+      width: 40px;
+      height: 40px;
       border-radius: 50%;
       float:left;
       left:0%;
+    }
+
+    .Rlabel {
+      position: relative;
+      top: 50px;
+      right: -11%;
+      text-align: right;
+      overflow-x: hidden;
+      padding-right: 5%;
     }
   </style>
 </head>
@@ -226,7 +242,9 @@
     $(function () {
       var socket = io();
       $('form').submit(function () {
-        socket.emit('chat message', { username: $("#username").val(), msg: $('#m').val() });
+        socket.emit('chat message', { 
+          username: $("#username").val(),
+          msg: $('#m').val() });
         $('#m').val('');
         return false;
       });
@@ -236,9 +254,12 @@
         let sender = data.username;
         let sms = data.msg;
         if (sender === $("#username").val()) {
-          var image = $('<img src="' +data.source+ '" class="chatAvatarl">')
+          if (sender.length > 6){
+            sender = sender.slice(0,6);
+          }
           $('#messages').append(
                                $("<img>", {src: data.source, class: "chatAvatarR"}),
+                               $("<p>", {class: "Rlabel"}).text(sender),
                                $('<p>', {class: "rightSmg"}).text(sms));
           $("#chatbox").scrollTop($("#chatbox")[0].scrollHeight);
         } else {
@@ -256,7 +277,8 @@
       socket.on('online', function (msg) {
         for (let i = 0; i < msg.length; ++i) {
           if (!current.includes(msg[i].username)) {
-            $("#users").append($("<img>", { src: msg[i].source, class: "avatar" }), $("<span>").text(msg[i].username), $("<br>"));
+            $("#users").append($("<img>", { src: msg[i].source, class: "avatar" }), 
+                              $("<span>").text(msg[i].username), $("<br>"));
             current.push(msg[i].username);
           }
         }

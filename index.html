@@ -22,8 +22,9 @@
       background: #000;
       padding: 3px;
       position: fixed;
-      bottom: 50px;
+      bottom: 22%;
       width: 50%;
+      right: 10%;
     }
 
     form input {
@@ -43,22 +44,15 @@
     #messages {
       list-style-type: none;
       margin: 0;
-      padding: 0;
+      padding: 5%;
     }
 
-    #messages li {
-      padding: 5px 10px;
-    }
-
-    /* #messages li:nth-child(odd) {
-      background: #eee;
-    } */
 
     #messages {
       margin-bottom: 40px
     }
 
-    #chatbox {
+    .chatbox {
       background: linear-gradient(to bottom left, #33ccff 11%, #ccffff 71%);
       margin-top: 5%;
       width: 50%;
@@ -96,6 +90,8 @@
       overflow-x: hidden;
       background: white;
       background-size: contain;
+      width: 70%;
+      margin-left: 5%;
     }
 
     .rightSmg {
@@ -104,6 +100,8 @@
       padding-right: 5%;
       background: white;
       background-size: contain;
+      width: 70%;
+      margin-left: 20%;
     }
     ::-webkit-scrollbar { 
         display: none; 
@@ -114,6 +112,15 @@
       width: 50px;
       height: 50px;
       border-radius: 50%;
+      cursor: pointer;
+    }
+
+    .avatar-online {
+      vertical-align: middle;
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      cursor: pointer;
     }
 
     span {
@@ -132,6 +139,7 @@
     }
 
     .chatAvatarL {
+      position: relative;
       top: 10px;
       vertical-align: middle;
       width: 40px;
@@ -149,6 +157,31 @@
       overflow-x: hidden;
       padding-right: 5%;
     }
+
+    .Llabel {
+      position: relative;
+      top: 47px;
+      left: -11%;
+      text-align: left;
+      overflow-x: hidden;
+      padding-left: 5%;
+    }
+
+    .typing {
+      float: left;
+      vertical-align: middle;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+    }
+
+    #divTyping {
+      position: fixed;
+      bottom: 28%; 
+      padding-left: 2%;
+    }
+
+
   </style>
 </head>
 
@@ -191,10 +224,11 @@
   </div>
   <div id="main">
     <div id="activeUser">
+      <img src="" class="avatar" id="own"><span id="ownlabel"></span>
       <h1>Active</h1>
       <div id="users"></div>
     </div>
-    <div class="col" id="chatbox">
+    <div class="chatbox" id="chatbox">
       <h1>Chat box</h1>
       <div id="messages">
         <table>
@@ -202,9 +236,10 @@
           <tbody id="mainbox"></tbody>
         </table>
       </div>
+      <div id="divTyping"></div>
       <!-- <ul id="messages"></ul> -->
       <form action="">
-        <input id="m" autocomplete="off" /><button>Send</button>
+        <input id="m" autocomplete="off" class="input" /><button>Send</button>
       </form>
     </div>
 
@@ -219,12 +254,15 @@
       $("#btnStart").attr("disabled", true);
       var socket = io();
       var avatari = "";
+      var usernamei = "";
       $("#main").hide();
       $("#btnStart").click(function () {
-        var usernamei = $("#username").val();
+        usernamei = $("#username").val();
         $("#LoginDiv").hide();
         $("#main").show();
         socket.emit('online', { username: usernamei, source: avatari });
+        $("#own").attr("src", avatari)
+        $("#ownlabel").text(usernamei)
       });
 
       $("#btnAvatar").click(function () {
@@ -238,37 +276,48 @@
         $("#avaDiv").hide();
         $("#btnStart").attr("disabled", false);
       });
+
+      $(".input").keydown(function () {
+        socket.emit("typing", { username: usernamei, avatar: avatari })
+      })
+
+      $(".input").keyup(function () {
+        if($(this).val() == ""){
+          console.log("dapamadfsfnasdfsd")
+          socket.emit('stop-typing', { username: $("#username").val() })
+        }
+      })
+
     });
+
+
     $(function () {
       var socket = io();
       $('form').submit(function () {
-        socket.emit('chat message', { 
-          username: $("#username").val(),
-          msg: $('#m').val() });
+        socket.emit('chat message', { username: $("#username").val(), msg: $('#m').val() });
+        socket.emit('stop-typing', { username: $("#username").val() })
         $('#m').val('');
         return false;
       });
 
       socket.on('chat message', function (data) {
-        ///let data = JSON.parse(msg);
         let sender = data.username;
         let sms = data.msg;
+        var nickname = sender;
+        if (sender.length > 6) {
+          nickname = sender.slice(0, 6);
+        }
         if (sender === $("#username").val()) {
-          if (sender.length > 6){
-            sender = sender.slice(0,6);
-          }
           $('#messages').append(
-                               $("<img>", {src: data.source, class: "chatAvatarR"}),
-                               $("<p>", {class: "Rlabel"}).text(sender),
-                               $('<p>', {class: "rightSmg"}).text(sms));
+            $("<img>", { src: data.source, class: "chatAvatarR" }),
+            $("<p>", { class: "Rlabel" }).text(nickname),
+            $('<p>', { class: "rightSmg" }).text(sms));
           $("#chatbox").scrollTop($("#chatbox")[0].scrollHeight);
         } else {
           $('#messages').append(
-                               $("<img>", {src: data.source, class: "chatAvatarL"}),
-                               $('<p>', {class: "leftSmg"}).text(sms));
-          // $('#messages').append($('<p>', {
-          //   class: "leftSmg"
-          // }).text(sender + " " + sms));
+            $("<img>", { src: data.source, class: "chatAvatarL" }),
+            $("<p>", { class: "Llabel" }).text(nickname),
+            $('<p>', { class: "leftSmg" }).text(sms));
           $("#chatbox").scrollTop($("#chatbox")[0].scrollHeight);
         }
       });
@@ -277,14 +326,38 @@
       socket.on('online', function (msg) {
         for (let i = 0; i < msg.length; ++i) {
           if (!current.includes(msg[i].username)) {
-            $("#users").append($("<img>", { src: msg[i].source, class: "avatar" }), 
-                              $("<span>").text(msg[i].username), $("<br>"));
+            $("#users").append($("<img>", { src: msg[i].source, class: "avatar-online", alt: msg[i].username }),
+              $("<span>").text("  " + msg[i].username), $("<br>"));
             current.push(msg[i].username);
           }
         }
-      })
+      });
 
+      var now_typing = []
+      socket.on("typing", function (data) {
+        if (data.username != $("#username").val()) {
+          if (!now_typing.includes(data.username)) {
+            $("#divTyping").append($("<img>", { src: data.avatar, class: "typing" }), $("<span>").text("..."))
+            now_typing.push(data);
+            
+          }
+        }
+      });
 
+      socket.on("stop-typing", function (data) {
+        $('#divTyping').empty();
+        for (var i = 0; i < now_typing.length; i++) {
+          if (now_typing[i].username === data.username) {
+            now_typing.splice(i, 1);
+          }
+        }
+        for (var i = 0; i < now_typing.length; i++) {
+            $("#divTyping").append($("<img>", { src: now_typing[i].avatar, class: "typing" }))
+        }
+        if (now_typing.length == 0){
+          $("#divTyping").text("");
+        }
+      });
     });
   </script>
 </body>

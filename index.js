@@ -4,7 +4,7 @@ var io = require('socket.io')(http);
 var fs = require('fs');
 
 
-var port = process.env.PORT || 3000;
+var port = process.env.PORT || 3232;
 var users = [];
 
 app.get('/', function (req, res) {
@@ -21,11 +21,19 @@ io.on('connection', function (socket) {
     io.emit('chat message', msg);
   });
 
-  socket.on('online', function (msg) {
-    if (!users.includes(msg.username)) {
-      users.push(msg);
+  socket.on('online', function (data) {
+    if (!users.includes(data.username)) {
+      users.push(data);
     }
     io.emit('online', users);
+  });
+
+  socket.on("typing", function(data){
+    io.emit("typing", data);
+  });
+
+  socket.on("stop-typing", function(data){
+    io.emit("stop-typing", data);
   });
 });
 

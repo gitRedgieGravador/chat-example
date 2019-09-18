@@ -1,42 +1,59 @@
 var app = require('express')();
 var http = require('http').Server(app);
 var io = require('socket.io')(http);
-var fs = require('fs');
+var exp = require('express');
 
-
-var port = process.env.PORT || 3232;
+var port = process.env.PORT || 3000;
 var users = [];
+var toDisconnect = [];
 
-app.get('/', function (req, res) {
-  res.sendFile(__dirname + '/index.html');
+app.get('/', function(req, res) {
+    res.sendFile(__dirname + '/index.html');
 });
 
-io.on('connection', function (socket) {
-  socket.on('chat message', function (msg) {
-    users.forEach(element => {
-      if(element.username == msg.username){
-        msg = {username: msg.username, msg: msg.msg, source: element.source}
-      }
+app.use(exp.static('public'));
+
+io.on('connection', function(socket) {
+    socket.on('chat message', function(msg) {
+        users.forEach(element => {
+            if (element.username == msg.username) {
+                msg = { username: msg.username, msg: msg.msg, source: element.source }
+            }
+        });
+        io.emit('chat message', msg);
     });
-    io.emit('chat message', msg);
-  });
 
-  socket.on('online', function (data) {
-    if (!users.includes(data.username)) {
-      users.push(data);
-    }
-    io.emit('online', users);
-  });
+    socket.on('broadcast', function(data) {
+        io.emit('broadcast', data)
+    })
 
-  socket.on("typing", function(data){
-    io.emit("typing", data);
-  });
+    socket.on('online', function(data) {
+        if (!users.includes(data.username)) {
+            users.push(data);
+            toDisconnect.push({ username: data.username, source: data.source })
+        }
+        io.emit('online', users);
+    });
 
-  socket.on("stop-typing", function(data){
-    io.emit("stop-typing", data);
-  });
+    socket.on("typing", function(data) {
+        io.emit("typing", data);
+    });
+
+    socket.on("stop-typing", function(data) {
+        io.emit("stop-typing", data);
+    });
+
+
+    socket.on('logout', function(data) {
+        for (let i = 0; i < toDisconnect.length; ++i) {
+            if (toDisconnect[i].username == data) {
+                toDisconnect.splice(i, 1);
+            }
+        }
+        io.emit('logout', toDisconnect)
+    });
 });
 
-http.listen(port, function () {
-  console.log('listening on *:' + port);
+http.listen(port, function() {
+    console.log('listening on *:' + port);
 });

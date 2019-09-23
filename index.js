@@ -2,6 +2,7 @@ var app = require('express')();
 var http = require('http').Server(app);
 var io = require('socket.io')(http);
 var exp = require('express');
+var fs = require('fs');
 
 var port = process.env.PORT || 3000;
 var users = [];
@@ -30,7 +31,7 @@ io.on('connection', function(socket) {
     socket.on('online', function(data) {
         if (!users.includes(data.username)) {
             users.push(data);
-            toDisconnect.push({ username: data.username, source: data.source })
+            //toDisconnect.push({ username: data.username, source: data.source })
         }
         io.emit('online', users);
     });
@@ -45,12 +46,12 @@ io.on('connection', function(socket) {
 
 
     socket.on('logout', function(data) {
-        for (let i = 0; i < toDisconnect.length; ++i) {
-            if (toDisconnect[i].username == data) {
-                toDisconnect.splice(i, 1);
+        for (let i = 0; i < users.length; ++i) {
+            if (users[i].username == data) {
+                users.splice(i, 1);
             }
         }
-        io.emit('logout', toDisconnect)
+        io.emit('logout', users)
     });
 });
 

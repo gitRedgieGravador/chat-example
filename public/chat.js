@@ -12,7 +12,7 @@ $(function() {
         $("#main").show();
         socket.emit('online', { username: usernamei, source: avatari });
         $("#own").attr("src", avatari)
-        $("#ownlabel").text(usernamei)
+        $("#ownlabel").text(" " + usernamei)
         socket.emit('broadcast', usernamei)
     });
 
@@ -43,9 +43,20 @@ $(function() {
         location.reload();
     })
 
-    $('form').submit(function() {
+    $('form').submit(function(event) {
+        event.preventDefault()
         socket.emit('chat message', { username: usernamei, msg: $('#m').val() });
         socket.emit('stop-typing', { username: usernamei, avatar: avatari })
+        var nickname = usernamei;
+        if (usernamei.length > 4) {
+            nickname = usernamei.slice(0, 4);
+        }
+
+        $('#messages').append(
+            $("<img>", { src: avatari, class: "chatAvatarR" }),
+            $("<p>", { class: "Rlabel" }).text(nickname),
+            $('<p>', { class: "rightSmg" }).text($('#m').val()));
+        $("#chatbox").scrollTop($("#chatbox")[0].scrollHeight);
         $('#m').val('');
         return false;
     });
@@ -57,13 +68,7 @@ $(function() {
         if (sender.length > 6) {
             nickname = sender.slice(0, 6);
         }
-        if (sender === usernamei) {
-            $('#messages').append(
-                $("<img>", { src: data.source, class: "chatAvatarR" }),
-                $("<p>", { class: "Rlabel" }).text(nickname),
-                $('<p>', { class: "rightSmg" }).text(sms));
-            $("#chatbox").scrollTop($("#chatbox")[0].scrollHeight);
-        } else {
+        if (sender != usernamei) {
             $('#messages').append(
                 $("<img>", { src: data.source, class: "chatAvatarL" }),
                 $("<p>", { class: "Llabel" }).text(nickname),
@@ -95,6 +100,7 @@ $(function() {
                 aft_disconnect.push(data[i].username);
             }
         }
+
     })
 
     var now_typing = []
@@ -122,13 +128,8 @@ $(function() {
 
     socket.on('broadcast', function(data) {
         if (data != $("#username").val()) {
-            Swal.fire({
-                title: data + 'is online',
-                showConfirmButton: false,
-                timer: 500
-            })
+            $(document).append($("<p>", { class: 'top_right' }).text(data + " has left"))
         }
-
     })
 
 });
